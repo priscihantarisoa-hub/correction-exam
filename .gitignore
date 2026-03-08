@@ -1,0 +1,22 @@
+# Fichiers ignorés par Git
+
+# Fichiers temporaires
+*.class
+*.log
+*.tmp
+
+# Répertoire de compilation
+/build/
+/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+Thumbs.db
+.DS_Store
