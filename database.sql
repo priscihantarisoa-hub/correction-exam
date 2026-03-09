@@ -1,4 +1,4 @@
--- Script de création des tables pour le système de correction d'examens
+-- Script de réinitialisation complète
 \c correction_exam;
 
 DELETE FROM note;
@@ -86,22 +86,14 @@ INSERT INTO operateur (nom, description) VALUES
 -- Insertion des données de base pour Matiere
 INSERT INTO matiere (nom) VALUES 
 ('JAVA'),
-('PHP'),
-('Informatique'),
-('Français'),
-('Anglais');
+('PHP');
 
 -- Insertion des données de base pour Correcteur
 INSERT INTO correcteur (nom) VALUES 
-('Prof Aina'),
-('Prof Ratsara'),
-('Prof Randria'),
-('Prof Rasoa');
+('Correcteur1'),
+('Correcteur2');
 
 -- Insertion des données de base pour Candidat
 INSERT INTO candidat (nom) VALUES 
-('Rakoto'),
-('Rasoa'),
-('Mamy'),
-('Tiana'),
-('Fitia');
+('Candidat1'),
+('Candidat2');
