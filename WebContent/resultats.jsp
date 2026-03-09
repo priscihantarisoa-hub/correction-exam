@@ -89,6 +89,29 @@
                     try {
                         conn = DBConnection.getConnection();
                         
+                        // Get all parametres for operator comparison
+                        String sqlParam = "SELECT p.id, p.id_matiere, p.valeur, p.id_operateur, o.nom as op_nom, r.type " +
+                                         "FROM parametre p " +
+                                         "JOIN operateur o ON p.id_operateur = o.id " +
+                                         "JOIN resolution r ON p.id_resolution = r.id";
+                        Statement stmtParam = conn.createStatement();
+                        ResultSet rsParam = stmtParam.executeQuery(sqlParam);
+                        
+                        // Store parametres in a list
+                        List<String[]> parametres = new ArrayList<>();
+                        while (rsParam.next()) {
+                            String[] p = new String[6];
+                            p[0] = String.valueOf(rsParam.getInt("id"));
+                            p[1] = String.valueOf(rsParam.getInt("id_matiere"));
+                            p[2] = String.valueOf(rsParam.getInt("valeur"));
+                            p[3] = String.valueOf(rsParam.getInt("id_operateur"));
+                            p[4] = rsParam.getString("op_nom");
+                            p[5] = rsParam.getString("type");
+                            parametres.add(p);
+                        }
+                        rsParam.close();
+                        stmtParam.close();
+                        
                         // Query to get all candidates and subjects
                         String sql = "SELECT c.nom as candidat, m.nom as matiere, m.id as id_matiere, c.id as id_candidat " +
                                      "FROM candidat c " +
@@ -141,36 +164,77 @@
                                 }
                                 double moyenne = sum / notes.size();
                                 
-                                double noteFinale = 0;
+                                // Find parametre for this matiere
                                 String type = "";
+                                double noteFinale = 0;
                                 
-                                // Logique de calcul selon la somme des différences
-                                if (sumDiff <= 2) {
-                                    // Petit
-                                    noteFinale = moyenne;
-                                    type = "petit";
-                                } else if (sumDiff <= 5) {
-                                    // Moyen
-                                    noteFinale = moyenne;
-                                    type = "moyen";
-                                } else {
-                                    // Grand
-                                    // Trouver max et min
-                                    double maxNote = notes.get(0);
-                                    double minNote = notes.get(0);
-                                    for (double n : notes) {
-                                        if (n > maxNote) maxNote = n;
-                                        if (n < minNote) minNote = n;
+                                for (String[] p : parametres) {
+                                    if (Integer.parseInt(p[1]) == idMatiere) {
+                                        int valeur = Integer.parseInt(p[2]);
+                                        int idOperateur = Integer.parseInt(p[3]);
+                                        String opNom = p[4];
+                                        type = p[5];
+                                        
+                                        // Apply operator
+                                        boolean match = false;
+                                        if (opNom.equals("sup")) {
+                                            match = sumDiff > valeur;
+                                        } else if (opNom.equals("inf")) {
+                                            match = sumDiff < valeur;
+                                        } else if (opNom.equals("supegal")) {
+                                            match = sumDiff >= valeur;
+                                        } else if (opNom.equals("infegal")) {
+                                            match = sumDiff <= valeur;
+                                        }
+                                        
+                                        if (match) {
+                                            if (type.equals("grand")) {
+                                                // Grand - moyenne sans max et min
+                                                double maxNote = notes.get(0);
+                                                double minNote = notes.get(0);
+                                                for (double n : notes) {
+                                                    if (n > maxNote) maxNote = n;
+                                                    if (n < minNote) minNote = n;
+                                                }
+                                                
+                                                if (notes.size() > 2) {
+                                                    double sumMiddle = sum - maxNote - minNote;
+                                                    noteFinale = sumMiddle / (notes.size() - 2);
+                                                } else {
+                                                    noteFinale = moyenne;
+                                                }
+                                            } else {
+                                                // Petit ou moyen - moyenne simple
+                                                noteFinale = moyenne;
+                                            }
+                                            break;
+                                        }
                                     }
-                                    
-                                    if (notes.size() > 2) {
-                                        // Moyenne sans max et min
-                                        double sumMiddle = sum - maxNote - minNote;
-                                        noteFinale = sumMiddle / (notes.size() - 2);
-                                    } else {
+                                }
+                                
+                                // If no parametre matched, use default calculation
+                                if (type.equals("")) {
+                                    if (sumDiff <= 2) {
                                         noteFinale = moyenne;
+                                        type = "petit";
+                                    } else if (sumDiff <= 5) {
+                                        noteFinale = moyenne;
+                                        type = "moyen";
+                                    } else {
+                                        double maxNote = notes.get(0);
+                                        double minNote = notes.get(0);
+                                        for (double n : notes) {
+                                            if (n > maxNote) maxNote = n;
+                                            if (n < minNote) minNote = n;
+                                        }
+                                        if (notes.size() > 2) {
+                                            double sumMiddle = sum - maxNote - minNote;
+                                            noteFinale = sumMiddle / (notes.size() - 2);
+                                        } else {
+                                            noteFinale = moyenne;
+                                        }
+                                        type = "grand";
                                     }
-                                    type = "grand";
                                 }
                                 
                                 // Round to 2 decimal places
