@@ -1,4 +1,18 @@
 -- Script de création des tables pour le système de correction d'examens
+\c correction_exam;
+
+DELETE FROM note;
+DELETE FROM candidat;
+DELETE FROM matiere;
+DELETE FROM correcteur;
+DELETE FROM parametre;
+DELETE FROM resolution;
+DELETE FROM operateur;
+
+ALTER SEQUENCE note_id_seq RESTART WITH 1;
+ALTER SEQUENCE candidat_id_seq RESTART WITH 1;
+ALTER SEQUENCE matiere_id_seq RESTART WITH 1;
+ALTER SEQUENCE correcteur_id_seq RESTART WITH 1;
 
 -- Table Correcteur
 CREATE TABLE correcteur (
@@ -71,8 +85,8 @@ INSERT INTO operateur (nom, description) VALUES
 
 -- Insertion des données de base pour Matiere
 INSERT INTO matiere (nom) VALUES 
-('Mathématiques'),
-('Physique'),
+('JAVA'),
+('PHP'),
 ('Informatique'),
 ('Français'),
 ('Anglais');
