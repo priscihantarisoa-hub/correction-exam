@@ -1,5 +1,4 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.io.*" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -27,13 +26,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
-        .success {
+        .info {
             color: #27ae60;
-            font-size: 18px;
-            margin: 20px 0;
-        }
-        .error {
-            color: #e74c3c;
             font-size: 18px;
             margin: 20px 0;
         }
@@ -54,48 +48,21 @@
     </div>
     
     <div class="container">
-        <%
-            Connection conn = null;
-            try {
-                // Read the reset.sql file
-                String sqlFile = application.getRealPath("/") + "reset.sql";
-                BufferedReader reader = new BufferedReader(new FileReader(sqlFile));
-                StringBuilder sqlContent = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sqlContent.append(line).append("\n");
-                }
-                reader.close();
-                
-                // Connect and execute
-                conn = com.exam.DBConnection.getConnection();
-                Statement stmt = conn.createStatement();
-                
-                // Split and execute each statement
-                String[] statements = sqlContent.toString().split(";");
-                for (String s : statements) {
-                    s = s.trim();
-                    if (!s.isEmpty() && !s.startsWith("--")) {
-                        try {
-                            stmt.execute(s);
-                        } catch (SQLException e) {
-                            // Ignore errors for some statements
-                        }
-                    }
-                }
-                
-                stmt.close();
-                
-                out.println("<p class='success'>✓ Base de données réinitialisée avec succès!</p>");
-                out.println("<p>Toutes les données ont été remises à zéro.</p>");
-                
-            } catch (Exception e) {
-                out.println("<p class='error'>✗ Erreur: " + e.getMessage() + "</p>");
-                e.printStackTrace();
-            } finally {
-                if (conn != null) conn.close();
-            }
-        %>
+        <p class="info">✓ Les tables ont déjà été créées!</p>
+        
+        <p>Si vous voulez réinitialiser les données:</p>
+        <ol style="text-align: left;">
+            <li>Ouvrir pgAdmin</li>
+            <li>Aller dans votre base de données</li>
+            <li>Exécuter le script reset.sql</li>
+        </ol>
+        
+        <p><strong>Ou</strong> - Supprimer et recréer les tables:</p>
+        <pre style="text-align: left; background: #f5f5f5; padding: 10px;">
+DROP TABLE IF EXISTS note CASCADE;
+DROP TABLE IF EXISTS candidat CASCADE;
+-- Recréer les tables...
+        </pre>
         
         <a href="index.jsp" class="btn-retour">Retour au menu</a>
     </div>

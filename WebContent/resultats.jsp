@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, com.exam.DBConnection" %>
+<%@ page import="java.sql.*, com.exam.DBConnection, java.util.ArrayList, java.util.List" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -19,7 +19,7 @@
             text-align: center;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 30px auto;
             padding: 20px;
             background-color: white;
@@ -57,6 +57,10 @@
             display: inline-block;
             margin-bottom: 20px;
         }
+        .notes-list {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -72,9 +76,10 @@
                 <tr>
                     <th>Candidat</th>
                     <th>Matière</th>
-                    <th>P1</th>
-                    <th>P2</th>
-                    <th>Diff</th>
+                    <th>Notes</th>
+                    <th>Nb</th>
+                    <th>Somme Diff</th>
+                    <th>Type</th>
                     <th>Note Finale</th>
                 </tr>
             </thead>
@@ -84,7 +89,7 @@
                     try {
                         conn = DBConnection.getConnection();
                         
-                        // Query to get all notes grouped by candidat and matiere
+                        // Query to get all candidates and subjects
                         String sql = "SELECT c.nom as candidat, m.nom as matiere, m.id as id_matiere, c.id as id_candidat " +
                                      "FROM candidat c " +
                                      "JOIN matiere m ON 1=1 " +
@@ -99,60 +104,115 @@
                             int idMatiere = rs.getInt("id_matiere");
                             int idCandidat = rs.getInt("id_candidat");
                             
-                            // Get notes for this candidat and matiere
-                            String sqlNotes = "SELECT note FROM note WHERE id_candidat = " + idCandidat + " AND id_matiere = " + idMatiere;
+                            // Get ALL notes for this candidat and matiere
+                            String sqlNotes = "SELECT note, nom as correcteur FROM note n " +
+                                             "JOIN correcteur c ON n.id_correcteur = c.id " +
+                                             "WHERE id_candidat = " + idCandidat + " AND id_matiere = " + idMatiere +
+                                             " ORDER BY n.id";
+                            
                             Statement stmt2 = conn.createStatement();
                             ResultSet rsNotes = stmt2.executeQuery(sqlNotes);
                             
-                            double note1 = -1, note2 = -1;
-                            int count = 0;
+                            // Collect all notes
+                            List<Double> notes = new ArrayList<>();
+                            List<String> correcteurs = new ArrayList<>();
+                            
                             while (rsNotes.next()) {
-                                if (count == 0) note1 = rsNotes.getDouble("note");
-                                else note2 = rsNotes.getDouble("note");
-                                count++;
+                                notes.add(rsNotes.getDouble("note"));
+                                correcteurs.add(rsNotes.getString("correcteur"));
                             }
                             rsNotes.close();
                             stmt2.close();
                             
-                            if (note1 >= 0 && note2 >= 0) {
-                                double diff = Math.abs(note1 - note2);
+                            // Need at least 2 notes to calculate
+                            if (notes.size() >= 2) {
+                                // Calculate sum of differences between all pairs
+                                double sumDiff = 0;
+                                for (int i = 0; i < notes.size(); i++) {
+                                    for (int j = i + 1; j < notes.size(); j++) {
+                                        sumDiff += Math.abs(notes.get(i) - notes.get(j));
+                                    }
+                                }
+                                
+                                // Calculate average
+                                double sum = 0;
+                                for (double n : notes) {
+                                    sum += n;
+                                }
+                                double moyenne = sum / notes.size();
+                                
                                 double noteFinale = 0;
                                 String type = "";
                                 
-                                // Logique de calcul selon la différence
-                                if (diff <= 2) {
-                                    // Petit - moyenne simple
-                                    noteFinale = (note1 + note2) / 2;
+                                // Logique de calcul selon la somme des différences
+                                if (sumDiff <= 2) {
+                                    // Petit
+                                    noteFinale = moyenne;
                                     type = "petit";
-                                } else if (diff <= 5) {
+                                } else if (sumDiff <= 5) {
                                     // Moyen
-                                    noteFinale = (note1 + note2) / 2;
+                                    noteFinale = moyenne;
                                     type = "moyen";
                                 } else {
-                                    // Grand - moyenne avec pondération
-                                    noteFinale = (note1 + note2) / 2;
+                                    // Grand
+                                    // Trouver max et min
+                                    double maxNote = notes.get(0);
+                                    double minNote = notes.get(0);
+                                    for (double n : notes) {
+                                        if (n > maxNote) maxNote = n;
+                                        if (n < minNote) minNote = n;
+                                    }
+                                    
+                                    if (notes.size() > 2) {
+                                        // Moyenne sans max et min
+                                        double sumMiddle = sum - maxNote - minNote;
+                                        noteFinale = sumMiddle / (notes.size() - 2);
+                                    } else {
+                                        noteFinale = moyenne;
+                                    }
                                     type = "grand";
                                 }
                                 
-                                // Arrondir à 2 décimales
+                                // Round to 2 decimal places
                                 noteFinale = Math.round(noteFinale * 100.0) / 100.0;
+                                
+                                // Build notes display string
+                                StringBuilder notesStr = new StringBuilder();
+                                for (int i = 0; i < notes.size(); i++) {
+                                    if (i > 0) notesStr.append(", ");
+                                    notesStr.append(notes.get(i)).append(" (").append(correcteurs.get(i)).append(")");
+                                }
                 %>
                 <tr>
                     <td><%= candidatNom %></td>
                     <td><%= matiereNom %></td>
-                    <td><%= note1 %></td>
-                    <td><%= note2 %></td>
-                    <td><%= diff %> (<%= type %>)</td>
+                    <td class="notes-list"><%= notesStr.toString() %></td>
+                    <td><%= notes.size() %></td>
+                    <td><%= sumDiff %></td>
+                    <td><%= type %></td>
                     <td class="note-finale"><%= noteFinale %></td>
+                </tr>
+                <%
+                            } else if (notes.size() == 1) {
+                %>
+                <tr>
+                    <td><%= candidatNom %></td>
+                    <td><%= matiereNom %></td>
+                    <td class="notes-list"><%= notes.get(0) %> (<%= correcteurs.get(0) %>)</td>
+                    <td>1</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td class="note-finale"><%= notes.get(0) %></td>
                 </tr>
                 <%
                             }
                         }
+                        
                         rs.close();
                         stmt.close();
                         
                     } catch (Exception e) {
-                        out.println("<tr><td colspan='6'>Erreur: " + e.getMessage() + "</td></tr>");
+                        out.println("<tr><td colspan='7'>Erreur: " + e.getMessage() + "</td></tr>");
                         e.printStackTrace();
                     } finally {
                         if (conn != null) conn.close();

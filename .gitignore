@@ -20,3 +20,27 @@
 # OS
 Thumbs.db
 .DS_Store
+
+
+# Voir l'état
+git status
+
+# Voir les changements
+git diff
+
+# Voir l'historique
+git log
+
+# Ajouter les modifications
+git add .
+
+# Sauvegarder (commit)
+git commit -m "Description des changements"
+
+# Créer une branche
+git checkout -b nom_branche
+
+# Basculer de branche
+git checkout master
+git checkout develop
+
