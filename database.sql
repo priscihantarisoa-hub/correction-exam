@@ -1,4 +1,18 @@
--- Script de création des tables pour le système de correction d'examens
+-- Script de réinitialisation complète
+\c correction_exam;
+
+DELETE FROM note;
+DELETE FROM candidat;
+DELETE FROM matiere;
+DELETE FROM correcteur;
+DELETE FROM parametre;
+DELETE FROM resolution;
+DELETE FROM operateur;
+
+ALTER SEQUENCE note_id_seq RESTART WITH 1;
+ALTER SEQUENCE candidat_id_seq RESTART WITH 1;
+ALTER SEQUENCE matiere_id_seq RESTART WITH 1;
+ALTER SEQUENCE correcteur_id_seq RESTART WITH 1;
 
 -- Table Correcteur
 CREATE TABLE correcteur (
@@ -25,11 +39,11 @@ CREATE TABLE resolution (
     description VARCHAR(255)
 );
 
--- Table Operateur (sup et difference)
+-- Table Operateur
 CREATE TABLE operateur (
     id SERIAL PRIMARY KEY,
-    nom VARCHAR(50) NOT NULL, -- 'sup' (supérieur) ou 'difference'
-    valeur INT NOT NULL -- la valeur de référence
+    nom VARCHAR(20) NOT NULL, -- 'sup', 'inf', 'supegal', 'infegal'
+    description VARCHAR(100)
 );
 
 -- Table Note
@@ -48,7 +62,7 @@ CREATE TABLE note (
 CREATE TABLE parametre (
     id SERIAL PRIMARY KEY,
     id_matiere INT NOT NULL,
-    diff INT NOT NULL, -- la différence
+    valeur INT NOT NULL, -- la valeur de comparaison
     id_operateur INT NOT NULL,
     id_resolution INT NOT NULL,
     FOREIGN KEY (id_matiere) REFERENCES matiere(id),
@@ -63,56 +77,23 @@ INSERT INTO resolution (type, description) VALUES
 ('grand', 'Différence grande - moyenne pondérée');
 
 -- Insertion des données de base pour Operateur
-INSERT INTO operateur (nom, valeur) VALUES 
-('sup', 2),
-('difference', 3);
+INSERT INTO operateur (nom, description) VALUES 
+('sup', '> (supérieur)'),
+('inf', '< (inférieur)'),
+('supegal', '>= (supérieur ou égal)'),
+('infegal', '<= (inférieur ou égal)');
 
 -- Insertion des données de base pour Matiere
 INSERT INTO matiere (nom) VALUES 
-('Mathématiques'),
-('Physique'),
-('Informatique'),
-('Français'),
-('Anglais');
+('JAVA'),
+('PHP');
 
 -- Insertion des données de base pour Correcteur
 INSERT INTO correcteur (nom) VALUES 
-('Prof Aina'),
-('Prof Ratsara'),
-('Prof Randria'),
-('Prof Rasoa');
+('Correcteur1'),
+('Correcteur2');
 
 -- Insertion des données de base pour Candidat
 INSERT INTO candidat (nom) VALUES 
-('Rakoto'),
-('Rasoa'),
-('Mamy'),
-('Tiana'),
-('Fitia');
-
--- Insertion des paramètres par matière
-INSERT INTO parametre (id_matiere, diff, id_operateur, id_resolution) VALUES 
-(1, 2, 2, 1), -- Maths: diff<=2 = petit
-(1, 5, 2, 2),  -- Maths: diff<=5 = moyen
-(1, 10, 2, 3), -- Maths: diff>5 = grand
-(2, 2, 2, 1),  -- Physique: diff<=2 = petit
-(2, 5, 2, 2),  -- Physique: diff<=5 = moyen
-(2, 10, 2, 3), -- Physique: diff>5 = grand
-(3, 2, 2, 1),  -- Info: diff<=2 = petit
-(3, 5, 2, 2),  -- Info: diff<=5 = moyen
-(3, 10, 2, 3); -- Info: diff>5 = grand
-
--- Notes d'exemple (à modifier par le prof)
-INSERT INTO note (note, id_candidat, id_matiere, id_correcteur) VALUES 
--- Rakoto - Maths
-(15, 1, 1, 1),
-(14, 1, 1, 2),
--- Rakoto - Physique
-(12, 1, 2, 1),
-(18, 1, 2, 2),
--- Rasoa - Maths
-(11, 2, 1, 1),
-(11, 2, 1, 2),
--- Rasoa - Physique
-(10, 2, 2, 1),
-(14, 2, 2, 2);
+('Candidat1'),
+('Candidat2');
